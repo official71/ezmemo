@@ -40,8 +40,8 @@ SEARCH_FUZZY = staticconf.read_string('default_search_fuzzy', default='True').lo
 # clear screen and print logo
 def home_screen():
     os.system('clear')
-    # print("=" * 60)
-    # print(FIGLET.renderText("      E z M e m o"))
+    print("=" * 60)
+    print(FIGLET.renderText("      E z M e m o"))
 
 
 def new_memo_via_editor():
@@ -78,24 +78,26 @@ def search_memo(search_type='fuzzy'):
     while True:
         keywords = input(" Search for memos, please input the keyword: ").strip()
         if search_type == 'fuzzy':
-            instances = memo_index.fuzzy_search(keywords)
+            results = memo_index.fuzzy_search(keywords)
         else:
-            instances = memo_index.strict_search(keywords)
-        if not continue_after_search(instances, keywords):
+            results = memo_index.strict_search(keywords)
+        if not continue_after_search(results, keywords):
             break
 
 
-def continue_after_search(instances, keywords):
+def continue_after_search(results, keywords):
     os.system('clear')
     print("\n Search results for keywords \"%s\":" % keywords)
-    print(" %d memo document(s) found" % len(instances))
+    print(" %d memo document(s) found" % len(results))
     print("-" * 30)
-    if not instances:
+    if not results:
         return True
     print(" Index\t%s\tTags" % _str_fixed_length("Title", 30))
-    for ind, inst in enumerate(instances):
-        print(" %3d  \t%s\t%s" % (ind, _str_fixed_length(inst.title, 30), ", ".join(inst.tags)))
-    index_range = "[0]" if len(instances) == 1 else "[0 - %d]" % (len(instances) - 1)
+    for ind, result in enumerate(results):
+        print(" %3d  \t%s\t%s" % (
+            ind, _str_fixed_length(result.instance.title, 30),
+            ", ".join(result.get_matching_tags() + result.get_mismatching_tags())))
+    index_range = "[0]" if len(results) == 1 else "[0 - %d]" % (len(results) - 1)
 
     while True:
         ind = input(
@@ -104,7 +106,7 @@ def continue_after_search(instances, keywords):
             break
         else:
             try:
-                subprocess.call("%s %s" % (EDITOR, instances[int(ind)].path.as_posix()), shell=True)
+                subprocess.call("%s %s" % (EDITOR, results[int(ind)].instance.path.as_posix()), shell=True)
             except Exception as e:
                 print(" Invalid input causing error: %s" % e)
 

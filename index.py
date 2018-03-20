@@ -66,11 +66,12 @@ class MemoIndex(object):
             self.tags[tag].append(path)
 
     def list_all(self):
-        return sorted(self.instances.values())
+        return sorted([SearchResultItem(instance) for instance in self.instances.values()])
 
     def strict_search(self, keyword_str):
         if not keyword_str: return self.list_all()
-        return sorted([self.instances[path] for path in self.tags[keyword_str.lower()] if path in self.instances])
+        instances = [self.instances[path] for path in self.tags[keyword_str.lower()] if path in self.instances]
+        return sorted([SearchResultItem(instance) for instance in instances])
 
     def fuzzy_search(self, keyword_str):
         if not keyword_str: return self.list_all()
