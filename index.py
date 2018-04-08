@@ -5,18 +5,22 @@ from heapq import *
 from instance import MemoInstance
 
 
-ScoreCounter = namedtuple('ScoreCounter', ['count', 'sum_score'])
-
+MIN_VALID_SCORE = 0.7
+MAX_VALID_SCORE = jaro_distance('abc', 'abc')
 
 class SearchResultItem(object):
     def __init__(self, instance):
         self.instance = instance
         self.nr_matching_tags = 0
+        self.nr_perfect_matching_tags = 0
         self.score = 0.0
         self.__matching_tags = []
 
-    def add_matching_tag(self, tag, score):
+    def add_matching_tag(self, tag, score, perfect_match=False):
         self.nr_matching_tags += 1
+        if perfect_match:
+            self.nr_perfect_matching_tags += 1
+            score *= 100 # dramatically overweight tags that are perfectly matched
         self.score += score
         heappush(self.__matching_tags, (-score, tag))
 
@@ -33,8 +37,10 @@ class SearchResultItem(object):
     def __lt__(self, other):
         if self.score != other.score:
             return self.score > other.score
+        elif self.nr_perfect_matching_tags != other.nr_perfect_matching_tags:
+            return self.nr_perfect_matching_tags > other.nr_perfect_matching_tags
         elif self.nr_matching_tags != other.nr_matching_tags:
-            return self.nr_matching_tags < other.nr_matching_tags
+            return self.nr_matching_tags > other.nr_matching_tags
         return self.instance < other.instance
 
 
@@ -46,8 +52,6 @@ class MemoIndex(object):
 
         self.instances = {}
         self.tags = defaultdict(list)
-        self.minimum_search_score = 0.7
-        self.high_search_score_threshold = 0.9
 
         self.__construct()
 
@@ -80,7 +84,8 @@ class MemoIndex(object):
         search_results = {}
         for tag, paths in self.tags.items():
             max_score = max([jaro_distance(tag, keyword) for keyword in keywords])
-            if max_score >= self.minimum_search_score:
+            if max_score >= MIN_VALID_SCORE:
+                perfect_match = max_score >= MAX_VALID_SCORE
                 for path in paths:
                     instance = self.instances.get(path, None)
                     if not instance:
@@ -89,5 +94,5 @@ class MemoIndex(object):
                         search_result_item = search_results[path]
                     else:
                         search_results[path] = search_result_item = SearchResultItem(instance)
-                    search_result_item.add_matching_tag(tag, max_score)
+                    search_result_item.add_matching_tag(tag, max_score, perfect_match)
         return sorted(search_results.values())
