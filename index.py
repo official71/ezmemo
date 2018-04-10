@@ -22,27 +22,24 @@ class SearchResultItem(object):
             self.nr_perfect_matched_tags += 1
             score *= 100 # dramatically overweight tags that are perfectly matched
         self.score += score
+        # Use a heap to sort tags by score
         heappush(self.__matched_tags, (-score, tag))
 
     def get_tags(self):
         matched_tags = []
-        index_lookup, index = {}, 0
+        all_tags = dict(self.instance.tags)
         heap = list(self.__matched_tags)
         while heap:
-            tag = heappop(heap)[1]
-            matched_tags.append(tag)
-            index_lookup[tag] = index
-            index += 1
-        # List matched_tags contains all tags that are matching the search query,
-        # sorted by relevance. However these tags are all lower-case, and we need
-        # to return the original tags saved in the instance.
-        non_match_tags = []
-        for tag in self.instance.tags:
-            tag_lower = tag.lower()
-            if tag_lower in index_lookup:
-                matched_tags[index_lookup[tag_lower]] = tag
-            else:
-                non_match_tags.append(tag)
+            # Find the original tag with the lower-case key
+            tag_key = heappop(heap)[1]
+            tag = all_tags.get(tag_key)
+            if tag:
+                # Append the original tag to matched list, and remove it from the pool.
+                matched_tags.append(tag)
+                del all_tags[tag_key]
+        # What's left in the pool are non-matching tags
+        non_match_tags = list(all_tags.values())
+
         return matched_tags, non_match_tags
 
     def __lt__(self, other):
@@ -77,10 +74,10 @@ class MemoIndex(object):
         inst = MemoInstance(fpath)
         path = inst.path.as_posix()
         self.instances[path] = inst
-        for tag in inst.tags:
-            # As keys, tags are converted to their lower cases.
+        for tag in inst.tags.keys():
+            # Tags are converted to their lower cases when constructing the instance.
             # Searching are also based on lower-case keywords.
-            self.tags[tag.lower()].add(path)
+            self.tags[tag].add(path)
 
     def list_all(self):
         return sorted([SearchResultItem(instance) for instance in self.instances.values()])

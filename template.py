@@ -54,6 +54,7 @@ def import_template_file(fpath):
                     contents['date'] = datetime.today()
             elif attribute == 'TAGS':
                 contents['tags'] = [tag.strip() for tag in value.split(',') if tag]
-        # once reached the end of attribute lines, the rest are body contents
-        contents['body'] = ''.join(line for line in f)
+        # Once reached the end of attribute lines, the rest are body contents.
+        # Do not save body, for now
+        # contents['body'] = ''.join(line for line in f)
     return contents

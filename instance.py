@@ -23,5 +23,8 @@ class MemoInstance(object):
         file_contents = import_template_file(path)
         self.title = file_contents.get('title', 'NULL')
         self.date = file_contents.get('date', None)
-        self.tags = file_contents.get('tags', [])
-        self.body = file_contents.get('body', "")
+        # Tags are stored as key: value pairs, where keys are the lower cases
+        # of the original tags; the keys are used for indexing and searching.
+        self.tags = {tag.lower(): tag for tag in file_contents.get('tags')}
+        # Do not store body, for now
+        # self.body = file_contents.get('body', "")
