@@ -5,8 +5,8 @@ from heapq import *
 from instance import MemoInstance
 
 
-MIN_VALID_SCORE = 0.7
-MAX_VALID_SCORE = jaro_distance('abc', 'abc')
+MIN_VALID_SCORE = 0.7 # minimal jaro distance to count as a "match"
+MAX_VALID_SCORE = jaro_distance('abc', 'abc') # jaro distance of a "perfect match"
 
 class SearchResultItem(object):
     def __init__(self, instance):
@@ -16,7 +16,7 @@ class SearchResultItem(object):
         self.score = 0.0
         self.__matched_tags = []
 
-    def add_matching_tag(self, tag, score, perfect_match=False):
+    def add_matched_tag(self, tag, score, perfect_match=False):
         self.nr_matched_tags += 1
         if perfect_match:
             self.nr_perfect_matched_tags += 1
@@ -44,8 +44,6 @@ class SearchResultItem(object):
             else:
                 non_match_tags.append(tag)
         return matched_tags, non_match_tags
-
-
 
     def __lt__(self, other):
         if self.score != other.score:
@@ -112,5 +110,5 @@ class MemoIndex(object):
                         search_result_item = search_results[path]
                     else:
                         search_results[path] = search_result_item = SearchResultItem(instance)
-                    search_result_item.add_matching_tag(tag, max_score, perfect_match)
+                    search_result_item.add_matched_tag(tag, max_score, perfect_match)
         return sorted(search_results.values())
