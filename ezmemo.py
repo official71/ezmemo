@@ -94,9 +94,10 @@ def continue_after_search(results, keywords):
         return True
     print(" Index\t%s\tTags" % _str_fixed_length("Title", 30))
     for ind, result in enumerate(results):
+        matched_tags, non_match_tags = result.get_tags()
         print(" %3d  \t%s\t%s" % (
             ind, _str_fixed_length(result.instance.title, 30),
-            ", ".join(result.get_matching_tags() + result.get_mismatching_tags())))
+            ", ".join(matched_tags + non_match_tags)))
     index_range = "[0]" if len(results) == 1 else "[0 - %d]" % (len(results) - 1)
 
     while True:
@@ -111,7 +112,7 @@ def continue_after_search(results, keywords):
                 print(" Invalid input causing error: %s" % e)
 
 
-# return True if process exits after this returns
+# return True if process exits after this function returns
 def edit_config_file():
     print(" Opening config file for editing...")
     try:

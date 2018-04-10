@@ -11,36 +11,49 @@ MAX_VALID_SCORE = jaro_distance('abc', 'abc')
 class SearchResultItem(object):
     def __init__(self, instance):
         self.instance = instance
-        self.nr_matching_tags = 0
-        self.nr_perfect_matching_tags = 0
+        self.nr_matched_tags = 0
+        self.nr_perfect_matched_tags = 0
         self.score = 0.0
-        self.__matching_tags = []
+        self.__matched_tags = []
 
     def add_matching_tag(self, tag, score, perfect_match=False):
-        self.nr_matching_tags += 1
+        self.nr_matched_tags += 1
         if perfect_match:
-            self.nr_perfect_matching_tags += 1
+            self.nr_perfect_matched_tags += 1
             score *= 100 # dramatically overweight tags that are perfectly matched
         self.score += score
-        heappush(self.__matching_tags, (-score, tag))
+        heappush(self.__matched_tags, (-score, tag))
 
-    def get_matching_tags(self):
-        matching_tags = []
-        heap = list(self.__matching_tags)
+    def get_tags(self):
+        matched_tags = []
+        index_lookup, index = {}, 0
+        heap = list(self.__matched_tags)
         while heap:
-            matching_tags.append(heappop(heap)[1])
-        return matching_tags
+            tag = heappop(heap)[1]
+            matched_tags.append(tag)
+            index_lookup[tag] = index
+            index += 1
+        # List matched_tags contains all tags that are matching the search query,
+        # sorted by relevance. However these tags are all lower-case, and we need
+        # to return the original tags saved in the instance.
+        non_match_tags = []
+        for tag in self.instance.tags:
+            tag_lower = tag.lower()
+            if tag_lower in index_lookup:
+                matched_tags[index_lookup[tag_lower]] = tag
+            else:
+                non_match_tags.append(tag)
+        return matched_tags, non_match_tags
 
-    def get_mismatching_tags(self):
-        return list(set(self.instance.tags) - set(self.get_matching_tags()))
+
 
     def __lt__(self, other):
         if self.score != other.score:
             return self.score > other.score
-        elif self.nr_perfect_matching_tags != other.nr_perfect_matching_tags:
-            return self.nr_perfect_matching_tags > other.nr_perfect_matching_tags
-        elif self.nr_matching_tags != other.nr_matching_tags:
-            return self.nr_matching_tags > other.nr_matching_tags
+        elif self.nr_perfect_matched_tags != other.nr_perfect_matched_tags:
+            return self.nr_perfect_matched_tags > other.nr_perfect_matched_tags
+        elif self.nr_matched_tags != other.nr_matched_tags:
+            return self.nr_matched_tags > other.nr_matched_tags
         return self.instance < other.instance
 
 
@@ -51,7 +64,7 @@ class MemoIndex(object):
             raise FileNotFoundError
 
         self.instances = {}
-        self.tags = defaultdict(list)
+        self.tags = defaultdict(set)
 
         self.__construct()
 
@@ -67,7 +80,9 @@ class MemoIndex(object):
         path = inst.path.as_posix()
         self.instances[path] = inst
         for tag in inst.tags:
-            self.tags[tag].append(path)
+            # As keys, tags are converted to their lower cases.
+            # Searching are also based on lower-case keywords.
+            self.tags[tag.lower()].add(path)
 
     def list_all(self):
         return sorted([SearchResultItem(instance) for instance in self.instances.values()])
@@ -79,7 +94,10 @@ class MemoIndex(object):
 
     def fuzzy_search(self, keyword_str):
         if not keyword_str: return self.list_all()
-        keywords = [keyword.lower() for keyword in keyword_str.split() if keyword] + [keyword_str.lower()]
+        keywords = [keyword.lower() for keyword in keyword_str.split() if keyword]
+        if ' ' in keyword_str:
+            # also include the whole string if it consists of multiple words
+            keywords.append(keyword_str.lower())
 
         search_results = {}
         for tag, paths in self.tags.items():
