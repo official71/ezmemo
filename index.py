@@ -53,9 +53,9 @@ class SearchResultItem(object):
 
 
 class MemoIndex(object):
-    def __init__(self, path):
-        self.path = path
-        if not path.exists() or not path.is_dir():
+    def __init__(self, memo_root):
+        self.memo_root = memo_root
+        if not memo_root.exists() or not memo_root.is_dir():
             raise FileNotFoundError
 
         self.instances = {}
@@ -64,20 +64,39 @@ class MemoIndex(object):
         self.__construct()
 
     def __construct(self):
-        for fpath in self.path.rglob('*.txt'):
+        for fpath in self.memo_root.rglob('*.txt'):
             try:
-                self.add_instance(fpath)
+                self.new_instance(fpath)
             except:
                 continue
 
-    def add_instance(self, fpath):
+    def new_instance(self, fpath):
         inst = MemoInstance(fpath)
+        self.__add_instance(inst)
+
+    def __add_instance(self, inst):
         path = inst.path.as_posix()
         self.instances[path] = inst
         for tag in inst.tags.keys():
             # Tags are converted to their lower cases when constructing the instance.
             # Searching are also based on lower-case keywords.
             self.tags[tag].add(path)
+
+    def delete_instance(self, fpath):
+        path = fpath.as_posix()
+        inst = self.instances.get(path)
+        if inst:
+            del self.instances[path]
+            for tag in inst.tags.keys():
+                self.tags.get(tag, set()).discard(path)
+
+    def update_instance(self, fpath, force_update=False):
+        new_inst = MemoInstance(fpath)
+        path = fpath.as_posix()
+        original_inst = self.instances.get(path)
+        if force_update or not original_inst or original_inst != new_inst:
+            self.delete_instance(fpath)
+            self.__add_instance(new_inst)
 
     def list_all(self):
         return sorted([SearchResultItem(instance) for instance in self.instances.values()])

@@ -50,7 +50,7 @@ def new_memo_via_editor():
         input(" Press any key to start %s editing: " % EDITOR)
         try:
             subprocess.call("%s %s" % (EDITOR, fpath.as_posix()), shell=True)
-            memo_index.add_instance(fpath)
+            memo_index.new_instance(fpath)
         except:
             pass
 
@@ -107,9 +107,11 @@ def continue_after_search(results, keywords):
             break
         else:
             try:
-                subprocess.call("%s %s" % (EDITOR, results[int(ind)].instance.path.as_posix()), shell=True)
+                fpath = results[int(ind)].instance.path
+                subprocess.call("%s %s" % (EDITOR, fpath.as_posix()), shell=True)
+                memo_index.update_instance(fpath)
             except Exception as e:
-                print(" Invalid input causing error: %s" % e)
+                print(" Failed to open and edit memo, error: %s" % e)
 
 
 # return True if process exits after this function returns
