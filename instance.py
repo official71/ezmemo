@@ -4,14 +4,14 @@ from template import *
 
 
 class MemoInstance(object):
-    def __init__(self, path=None):
-        self.path = path
-        if not path:
+    def __init__(self, fpath=None):
+        self.fpath = fpath
+        if not fpath:
             # TODO: create instances from interactive questions
             raise NotImplementedError
         else:
             try:
-                self.from_text_file(path)
+                self.from_text_file(fpath)
             except Exception as e:
                 print(" Failed to create memo instance: %s" % e)
                 raise e
@@ -25,8 +25,8 @@ class MemoInstance(object):
             self.tags == other.tags
         )
 
-    def from_text_file(self, path):
-        file_contents = import_template_file(path)
+    def from_text_file(self, fpath):
+        file_contents = import_template_file(fpath)
         self.title = file_contents.get('title', 'NULL')
         self.date = file_contents.get('date', None)
         # Tags are stored as key: value pairs, where keys are the lower cases

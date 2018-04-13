@@ -75,7 +75,7 @@ class MemoIndex(object):
         self.__add_instance(inst)
 
     def __add_instance(self, inst):
-        path = inst.path.as_posix()
+        path = inst.fpath.as_posix()
         self.instances[path] = inst
         for tag in inst.tags.keys():
             # Tags are converted to their lower cases when constructing the instance.
@@ -97,6 +97,10 @@ class MemoIndex(object):
         if force_update or not original_inst or original_inst != new_inst:
             self.delete_instance(fpath)
             self.__add_instance(new_inst)
+
+    def list_by_paths(self, paths):
+        instances = (self.instances.get(path) for path in paths)
+        return [SearchResultItem(instance) for instance in instances if instance]
 
     def list_all(self):
         return sorted([SearchResultItem(instance) for instance in self.instances.values()])

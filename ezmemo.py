@@ -10,6 +10,7 @@ from pyfiglet import Figlet
 #private
 from index import MemoIndex
 from instance import MemoInstance
+from recent_open import RecentOpenList
 from template import *
 
 
@@ -35,6 +36,7 @@ staticconf.YamlConfiguration(PATH_CONFIG.as_posix())
 PATH_MEMOS = get_memos_dir()
 EDITOR = staticconf.read_string('default_editor', default=os.getenv('EDITOR','vi'))
 SEARCH_FUZZY = staticconf.read_string('default_search_fuzzy', default='True').lower() == 'true'
+RECENT_OPEN_LIST_SIZE = staticconf.read_int('recent_open_list_size', default=10)
 
 
 # clear screen and print logo
@@ -49,10 +51,12 @@ def new_memo_via_editor():
     if fpath:
         input(" Press any key to start %s editing: " % EDITOR)
         try:
-            subprocess.call("%s %s" % (EDITOR, fpath.as_posix()), shell=True)
+            path = fpath.as_posix()
+            subprocess.call("%s %s" % (EDITOR, path), shell=True)
             memo_index.new_instance(fpath)
         except:
-            pass
+            return
+        recent_open_list.open(path)
 
 
 def new_file():
@@ -107,11 +111,14 @@ def continue_after_search(results, keywords):
             break
         else:
             try:
-                fpath = results[int(ind)].instance.path
-                subprocess.call("%s %s" % (EDITOR, fpath.as_posix()), shell=True)
+                fpath = results[int(ind)].instance.fpath
+                path = fpath.as_posix()
+                subprocess.call("%s %s" % (EDITOR, path), shell=True)
                 memo_index.update_instance(fpath)
             except Exception as e:
                 print(" Failed to open and edit memo, error: %s" % e)
+                continue
+            recent_open_list.open(path)
 
 
 # return True if process exits after this function returns
@@ -124,6 +131,39 @@ def edit_config_file():
         return False
     opt = input(" Must restart the process for the changes to apply, quit now (Y/N)? ").strip().lower()
     return opt in ['y', 'yes', 'q']
+
+
+def recently_opened():
+    os.system('clear')
+    results = memo_index.list_by_paths(recent_open_list.get_list())
+    if not results:
+        input(" No records. Press any key to continue: ")
+        return
+
+    print("\n Recently opened memos:")
+    print("-" * 30)
+    print(" Index\t%s\tTags" % _str_fixed_length("Title", 30))
+    for ind, result in enumerate(results):
+        print(" %3d  \t%s\t%s" % (
+            ind, _str_fixed_length(result.instance.title, 30),
+            ", ".join(list(result.instance.tags.values()))))
+    index_range = "[0]" if len(results) == 1 else "[0 - %d]" % (len(results) - 1)
+
+    while True:
+        ind = input(
+            "\n Enter the index %s to open the memo, or 'b'ack to the main menu: " % index_range).strip().lower()
+        if ind in ['', 'b', 'back']:
+            break
+        else:
+            try:
+                fpath = results[int(ind)].instance.fpath
+                path = fpath.as_posix()
+                subprocess.call("%s %s" % (EDITOR, path), shell=True)
+                memo_index.update_instance(fpath)
+            except Exception as e:
+                print(" Failed to open and edit memo, error: %s" % e)
+                continue
+            recent_open_list.open(path)
 
 
 def _str_fixed_length(string, length):
@@ -146,6 +186,9 @@ elif not PATH_MEMOS.is_dir():
 # construct index
 memo_index = MemoIndex(PATH_MEMOS)
 
+# recent-open list
+recent_open_list = RecentOpenList(RECENT_OPEN_LIST_SIZE)
+
 # main loop
 stop = False
 while not stop:
@@ -153,13 +196,14 @@ while not stop:
     print(" Actions:")
     print(
         " 1. New memo\n"
-        " 2. Search memo\n"
-        " 3. Settings\n"
-        " 4. Quit\n"
+        " 2. Search memos\n"
+        " 3. Recently opened memos\n"
+        " 4. Configurations\n"
+        " 5. Quit\n"
     )
     opt = input(" Please select action: ").strip().lower()
 
-    if opt == "4":
+    if opt == "5":
         stop = True
     elif opt == "1":
         new_memo_via_editor()
@@ -167,6 +211,8 @@ while not stop:
         search_type = 'fuzzy' if SEARCH_FUZZY else 'strict'
         search_memo(search_type=search_type)
     elif opt == "3":
+        recently_opened()
+    elif opt == "4":
         stop = edit_config_file()
 
     # break
