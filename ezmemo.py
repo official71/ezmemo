@@ -31,6 +31,7 @@ def get_memos_dir():
 FIGLET = Figlet(font='big')
 PATH_CWD = Path.cwd()
 PATH_CONFIG = PATH_CWD / 'config.yaml'
+PATH_RECENT_OPEN = PATH_CWD / 'recent_open.yaml'
 
 staticconf.YamlConfiguration(PATH_CONFIG.as_posix())
 PATH_MEMOS = get_memos_dir()
@@ -187,7 +188,10 @@ elif not PATH_MEMOS.is_dir():
 memo_index = MemoIndex(PATH_MEMOS)
 
 # recent-open list
-recent_open_list = RecentOpenList(RECENT_OPEN_LIST_SIZE)
+recent_open_list = RecentOpenList(
+    size=RECENT_OPEN_LIST_SIZE,
+    yaml_fpath=PATH_RECENT_OPEN,
+)
 
 # main loop
 stop = False
@@ -214,5 +218,5 @@ while not stop:
         recently_opened()
     elif opt == "4":
         stop = edit_config_file()
-
-    # break
+# save recently opened list
+recent_open_list.save()
