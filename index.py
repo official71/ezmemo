@@ -1,7 +1,6 @@
 from jellyfish import jaro_distance
 from pathlib import Path
-from collections import defaultdict, namedtuple
-from heapq import *
+from collections import defaultdict
 from instance import MemoInstance
 
 
@@ -14,7 +13,7 @@ class SearchResultItem(object):
         self.nr_matched_tags = 0
         self.nr_perfect_matched_tags = 0
         self.score = 0.0
-        self.__matched_tags = []
+        self.__matched_tags = {}
 
     def add_matched_tag(self, tag, score, perfect_match=False):
         self.nr_matched_tags += 1
@@ -22,25 +21,25 @@ class SearchResultItem(object):
             self.nr_perfect_matched_tags += 1
             score *= 100 # dramatically overweight tags that are perfectly matched
         self.score += score
-        # Use a heap to sort tags by score
-        heappush(self.__matched_tags, (-score, tag))
+        self.__matched_tags[tag] = score
+
+    def get_matched_tags(self):
+        keys_sorted_by_score = sorted(
+            self.__matched_tags.items(), key=lambda x: x[1], reverse=True
+        )
+        return [
+            (self.instance.tags[key], score)
+            for key, score in keys_sorted_by_score
+        ]
 
     def get_tags(self):
-        matched_tags = []
-        all_tags = dict(self.instance.tags)
-        heap = list(self.__matched_tags)
-        while heap:
-            # Find the original tag with the lower-case key
-            tag_key = heappop(heap)[1]
-            tag = all_tags.get(tag_key)
-            if tag:
-                # Append the original tag to matched list, and remove it from the pool.
-                matched_tags.append(tag)
-                del all_tags[tag_key]
-        # What's left in the pool are non-matching tags
-        non_match_tags = list(all_tags.values())
-
-        return matched_tags, non_match_tags
+        matched_tags = self.get_matched_tags()
+        non_match_tags = [
+            (self.instance.tags[key], 0)
+            for key in self.instance.tags
+            if key not in self.__matched_tags
+        ]
+        return matched_tags + non_match_tags
 
     def __lt__(self, other):
         if self.score != other.score:

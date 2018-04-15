@@ -99,10 +99,10 @@ def continue_after_search(results, keywords):
         return True
     print(" Index\t%s\tTags" % _str_fixed_length("Title", 30))
     for ind, result in enumerate(results):
-        matched_tags, non_match_tags = result.get_tags()
+        tags = result.get_tags()
         print(" %3d  \t%s\t%s" % (
             ind, _str_fixed_length(result.instance.title, 30),
-            ", ".join(matched_tags + non_match_tags)))
+            ", ".join((tag for tag, _ in tags))))
     index_range = "[0]" if len(results) == 1 else "[0 - %d]" % (len(results) - 1)
 
     while True:
