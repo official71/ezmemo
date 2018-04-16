@@ -2,42 +2,14 @@
 
 import os
 import subprocess
-import staticconf
 from datetime import datetime
-from pathlib import Path
 from shutil import copyfile
-from pyfiglet import Figlet
 #private
+from config import *
 from index import MemoIndex
 from instance import MemoInstance
 from recent_open import RecentOpenList
 from template import *
-
-
-def get_memos_dir():
-    dir_memos = staticconf.read_string('dir_memos', default='')
-    # try absolute dir
-    path_memos = Path(dir_memos)
-    if path_memos and path_memos.exists() and path_memos.is_dir():
-        return path_memos
-    # try relative dir
-    path_memos = PATH_CWD / dir_memos
-    if path_memos and path_memos.exists() and path_memos.is_dir():
-        return path_memos
-    return None
-
-
-# global utilities
-FIGLET = Figlet(font='big')
-PATH_CWD = Path.cwd()
-PATH_CONFIG = PATH_CWD / 'config.yaml'
-PATH_RECENT_OPEN = PATH_CWD / 'recent_open.yaml'
-
-staticconf.YamlConfiguration(PATH_CONFIG.as_posix())
-PATH_MEMOS = get_memos_dir()
-EDITOR = staticconf.read_string('default_editor', default=os.getenv('EDITOR','vi'))
-SEARCH_FUZZY = staticconf.read_string('default_search_fuzzy', default='True').lower() == 'true'
-RECENT_OPEN_LIST_SIZE = staticconf.read_int('recent_open_list_size', default=10)
 
 
 # clear screen and print logo
@@ -98,21 +70,21 @@ def continue_after_search(results, keywords):
     if not results:
         return True
     print(" Index\t%s\tTags" % _str_fixed_length("Title", 30))
-    for ind, result in enumerate(results):
+    for index, result in enumerate(results):
         tags = result.get_tags()
         print(" %3d  \t%s\t%s" % (
-            ind, _str_fixed_length(result.instance.title, 30),
+            index, _str_fixed_length(result.instance.title, 30),
             ", ".join((tag for tag, _ in tags))))
     index_range = "[0]" if len(results) == 1 else "[0 - %d]" % (len(results) - 1)
 
     while True:
-        ind = input(
+        index = input(
             "\n Enter the index %s to open the memo, or 'b'ack to the main menu: " % index_range).strip().lower()
-        if ind in ['', 'b', 'back']:
+        if index in ['', 'b', 'back']:
             break
         else:
             try:
-                fpath = results[int(ind)].instance.fpath
+                fpath = results[int(index)].instance.fpath
                 path = fpath.as_posix()
                 subprocess.call("%s %s" % (EDITOR, path), shell=True)
                 memo_index.update_instance(fpath)

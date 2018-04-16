@@ -1,6 +1,7 @@
 # data
 memos/*
 !memos/template.txt
+recent_open.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
