@@ -10,6 +10,7 @@ from index import MemoIndex
 from instance import MemoInstance
 from recent_open import RecentOpenList
 from template import *
+from colorizer import *
 
 
 # clear screen and print logo
@@ -71,10 +72,11 @@ def continue_after_search(results, keywords):
         return True
     print(" Index\t%s\tTags" % _str_fixed_length("Title", 30))
     for index, result in enumerate(results):
-        tags = result.get_tags()
-        print(" %3d  \t%s\t%s" % (
-            index, _str_fixed_length(result.instance.title, 30),
-            ", ".join((tag for tag, _ in tags))))
+        print(" %s\t%s\t%s" % (
+            color_index("%3d  " % index),
+            color_title(_str_fixed_length(result.instance.title, 30)),
+            color_tags(result.get_tags())
+        ))
     index_range = "[0]" if len(results) == 1 else "[0 - %d]" % (len(results) - 1)
 
     while True:

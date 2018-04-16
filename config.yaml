@@ -2,3 +2,4 @@ dir_memos: memos
 default_editor: vi
 default_search_fuzzy: true
 recent_open_list_size: 10
+enable_colorizer: true
